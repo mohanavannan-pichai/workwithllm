@@ -1,11 +1,14 @@
 # Hugging Face Model Demonstration with non Generative AI Language Models
 # Loading Models with Authentication and Performing NLP Tasks
+#By Mohanavannan Pichai
 
 #This sample demonstrates:
 #1.Create an simple GUI with TKinter Builtin Python Library
 #2.Setting up Hugging Face authentication 
-#2.Loading models for summarization
-#3.Show the results 
+#3.Loading models for summarization
+#4.Loading the large text from a text file
+#5.Performing Summarization using 3 different models
+#6.Show the results 
 
 #Import all Required Libraries..
 import tkinter as tk
@@ -26,11 +29,6 @@ from huggingface_hub import login
 import torch
 import warnings
 warnings.filterwarnings('ignore')
-
-print("Libraries imported successfully!")
-print(f"PyTorch version: {torch.__version__}")
-print(f"CUDA available: {torch.cuda.is_available()}")
-
 #Import ends here
 
 class SummarizationApp:
@@ -118,6 +116,15 @@ class SummarizationApp:
         self.t5_result = self._create_result_box("T5 Model", 5, 0)
         self.mistral_result = self._create_result_box("Google Pegasus (Large)", 6, 0)
 
+        # Separator
+        ttk.Separator(self.main_frame, orient='horizontal').grid(row=7, column=0, columnspan=2, sticky=(tk.W, tk.E), pady=10)
+
+        # Logs
+        ttk.Label(self.main_frame, text="App Terminal").grid(row=8, column=0, columnspan=2, pady=(0, 10))
+
+        self.app_logs = self._create_log_box("App Logs", 9, 0)
+
+
     def _create_result_box(self, label, row, col):
         frame = ttk.LabelFrame(self.main_frame, text=label, padding="5")
         frame.grid(row=row, column=col, columnspan=2, sticky=(tk.W, tk.E), pady=(0, 5))
@@ -127,6 +134,20 @@ class SummarizationApp:
         return box
 
     def _update_result(self, widget, text):
+        widget.configure(state=tk.NORMAL)
+        widget.delete(1.0, tk.END)
+        widget.insert(tk.END, text)
+        widget.configure(state=tk.DISABLED)
+
+    def _create_log_box(self, label, row, col):
+        frame = ttk.LabelFrame(self.main_frame, text=label, padding="5")
+        frame.grid(row=row, column=col, columnspan=2, sticky=(tk.W, tk.E), pady=(0, 5))
+        frame.columnconfigure(0, weight=1)
+        box = scrolledtext.ScrolledText(frame, height=4, state=tk.DISABLED)
+        box.grid(row=0, column=0, sticky=(tk.W, tk.E))
+        return box
+
+    def _update_log(self, widget, text):
         widget.configure(state=tk.NORMAL)
         widget.delete(1.0, tk.END)
         widget.insert(tk.END, text)
@@ -142,12 +163,12 @@ class SummarizationApp:
         self.root.update()
 
         def login_process():
+            #self.logging_process(f"Authenticated as: {user_info['name']}")
             try:
                 login(token=self.access_token.get().strip())
                 from huggingface_hub import HfApi
                 api = HfApi()
                 user_info = api.whoami()
-                print(f"Authenticated as: {user_info['name']}")
                 self.is_logged_in.set(True)
                 self.root.after(0, self.login_success)
             except Exception as e:
@@ -186,7 +207,7 @@ class SummarizationApp:
         self.access_token.set("")
 
         # Clear results
-        for widget in [self.bart_result, self.t5_result, self.mistral_result]:
+        for widget in [self.bart_result, self.t5_result, self.mistral_result, self.app_logs]:
             self._update_result(widget, "")
     def query_huggingface_t5(self,model,text):
         # Load Summarization Models
@@ -244,11 +265,23 @@ class SummarizationApp:
                 self._update_result(self.bart_result, bart_summary)
                 self._update_result(self.t5_result, t5_summary)
                 self._update_result(self.mistral_result, mistral_summary)
+                self._update_log(self.app_logs, "Summarization completed successfully.")
+
                 self.summarize_btn.configure(text="Summarize", state=tk.NORMAL)
 
             self.root.after(0, update_ui)
 
         threading.Thread(target=summarize_process, daemon=True).start()
+
+# Update logs in a separate thread
+"""
+        def logging_process(log_text):
+            def update_log():
+                self._update_log(self.app_logs, log_text)
+            self.root.after(0, update_log)
+        threading.Thread(target=logging_process, daemon=True).start()
+"""
+
 
 
 if __name__ == "__main__":
