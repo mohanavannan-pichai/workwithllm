@@ -7,7 +7,7 @@
 #2.Loading models for summarization
 #3.Show the results 
 
-#Import all Required Libraries
+#Import all Required Libraries..
 import tkinter as tk
 from tkinter import ttk, scrolledtext, messagebox
 import threading
